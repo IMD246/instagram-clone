@@ -4,7 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../constants/constants.dart';
 import '../models/auth_result.dart';
-import '../posts/typedefs/user_id.dart';
+import '../../posts/typedefs/user_id.dart';
 
 class Authenticator {
   final UserId? userId = FirebaseAuth.instance.currentUser?.uid;

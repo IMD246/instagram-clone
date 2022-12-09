@@ -1,23 +1,33 @@
-import 'dart:developer';
+import 'dart:developer' as devtools show log;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'firebase_options.dart';
-import 'state/auth/backend/authenticator.dart';
+import 'state/auth/providers/auth_state_provider.dart';
+import 'state/auth/providers/is_loggerd_in_provider.dart';
+import 'state/providers/is_loading_provider.dart';
+import 'views/components/loading/loading_screen.dart';
+
+extension Log on Object {
+  void log() => devtools.log(toString());
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: App(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
+class App extends StatelessWidget {
+  const App({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -31,44 +41,91 @@ class MyApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.dark,
       debugShowCheckedModeBanner: false,
-      home: const MyHomePage(),
+      home: Consumer(
+        builder: (context, ref, child) {
+          ref.listen(isLoadingProvider, (_, isLoading) {
+            if (isLoading) {
+              LoadingScreen.instance().show(context: context);
+            } else {
+              LoadingScreen.instance().hide();
+            }
+          });
+
+          final isLoggedIn = ref.watch(isLoggedInProvider);
+          if (isLoggedIn) {
+            return const MainView();
+          }
+          return const LoginView();
+        },
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class MainView extends StatefulWidget {
+  const MainView({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainView> createState() => _MainViewState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MainViewState extends State<MainView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Title'),
+        title: const Text('Main View'),
       ),
-      body: Center(
-        child: Column(
-          children: [
-            TextButton(
-              onPressed: () async {
-                final result = await Authenticator().loginWithGoogle();
-                log(result.toString());
-              },
-              child: const Text("Sign in with Google"),
+      body: Consumer(
+        builder: (_, ref, child) {
+          return TextButton(
+            onPressed: () async {
+              await ref.read(authStateProvider.notifier).logOut();
+            },
+            child: const Text("Logout"),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class LoginView extends StatelessWidget {
+  const LoginView({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login View'),
+      ),
+      body: Consumer(
+        builder: (context, ref, child) {
+          return Center(
+            child: Column(
+              children: [
+                TextButton(
+                  onPressed: () async {
+                    return await ref
+                        .read(authStateProvider.notifier)
+                        .loginWithGoogle();
+                  },
+                  child: const Text("Sign in with Google"),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    return await ref
+                        .read(authStateProvider.notifier)
+                        .loginWithFacebook();
+                  },
+                  child: const Text("Sign in with Facebook"),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () async {
-                final result = await Authenticator().loginWithFacebook();
-                log(result.toString());
-              },
-              child: const Text("Sign in with Facebook"),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

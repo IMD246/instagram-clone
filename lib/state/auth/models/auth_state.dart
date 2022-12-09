@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/foundation.dart' show immutable;
 
-import '../posts/typedefs/user_id.dart';
+import '../../posts/typedefs/user_id.dart';
 import 'auth_result.dart';
 
 @immutable
@@ -10,9 +10,9 @@ class AuthState {
   final bool isLoading;
   final UserId? userId;
   const AuthState({
-    this.result,
+    required this.result,
     required this.isLoading,
-    this.userId,
+    required this.userId,
   });
   const AuthState.unKnown()
       : result = null,
